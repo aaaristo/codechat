@@ -115,12 +115,26 @@ function App() {
   const [loading, setLoading] = useState(false);
   const chatLogRef = useRef(null);
   const apiUrl = "http://localhost:3000/chat-with-openai";
+  const getConversationUrl = "http://localhost:3000/get-conversation";
 
   useEffect(() => {
     if (chatLogRef.current) {
       chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
     }
   }, [chatLog]);
+
+  useEffect(() => {
+    const fetchConversation = async () => {
+      try {
+        const response = await axios.get(getConversationUrl);
+        setChatLog(response.data.conversation);
+      } catch (error) {
+        console.error("Error fetching conversation", error);
+      }
+    };
+
+    fetchConversation();
+  }, []);
 
   const handleSend = async () => {
     if (!message.trim()) return;

@@ -2,5 +2,9 @@
   "/chat-with-openai": {
     "method": "POST",
     "functionName": "ChatWithOpenAI"
+  },
+  "/get-conversation": {
+    "method": "GET",
+    "functionName": "GetConversation"
   }
 }
