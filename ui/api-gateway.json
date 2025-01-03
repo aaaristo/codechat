@@ -1,0 +1,6 @@
+{
+  "/chat-with-openai": {
+    "method": "POST",
+    "functionName": "ChatWithOpenAI"
+  }
+}

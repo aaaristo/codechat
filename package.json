@@ -1,0 +1,27 @@
+{
+  "name": "realtime",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openai/realtime-api-beta": "github:openai/openai-realtime-api-beta",
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.7.9",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mic": "^2.1.2",
+    "mkdirp": "^3.0.1",
+    "openai": "^4.77.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "readline": "^1.3.0",
+    "speaker": "^0.5.5",
+    "styled-components": "^6.1.13"
+  }
+}
