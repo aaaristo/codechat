@@ -16,6 +16,11 @@ You can run CodeChat directly using `npx`:
 npx codechat
 ```
 
+## UI
+
+The UI is a simple chat interface that allows you to interact with OpenAI. You can ask questions, upload images, and monitor
+what the model is doing in the console. By default you can access it on `http://localhost:3000`.
+
 ## Environment Variables
 Make sure to set the following environment variables:
 
