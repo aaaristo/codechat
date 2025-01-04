@@ -1,7 +1,6 @@
 const fs = require("fs");
 
-const OUTDIR = process.env.OUTDIR;
-const MODEL = "gpt-4o"; // or gpt-4-0613
+const OUTDIR = process.env.CODEIT_OUTPUT_FOLDER || ".";
 
 if (!OUTDIR) {
   throw new Error("OUTDIR environment variable is required");

@@ -64,17 +64,6 @@ const SendButton = styled.button`
   }
 `;
 
-const IframeContainer = styled.div`
-  flex: 1;
-  border-left: 1px solid #ddd;
-`;
-
-const Iframe = styled.iframe`
-  width: 100%;
-  height: 100%;
-  border: none;
-`;
-
 const ImagePreviewContainer = styled.div`
   position: relative;
   display: inline-block;
@@ -114,8 +103,9 @@ function App() {
   const [chatLog, setChatLog] = useState([]);
   const [loading, setLoading] = useState(false);
   const chatLogRef = useRef(null);
-  const apiUrl = "http://localhost:3000/chat-with-openai";
-  const getConversationUrl = "http://localhost:3000/get-conversation";
+  const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
+  const apiUrl = `${baseUrl}/chat-with-openai`;
+  const getConversationUrl = `${baseUrl}/get-conversation`;
 
   useEffect(() => {
     if (chatLogRef.current) {
@@ -181,13 +171,6 @@ function App() {
     }
   };
 
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault(); // Prevent new line in textarea
-      handleSend();
-    }
-  };
-
   const toDataURI = (file) =>
     new Promise((resolve, reject) => {
       if (!file) return resolve(null);
@@ -234,7 +217,6 @@ function App() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message here..."
-          onKeyPress={handleKeyPress}
         />
         <FileInput type="file" accept="image/*" onChange={handleFileChange} />
         {imagePreview && (
@@ -247,9 +229,6 @@ function App() {
           {loading ? "Sending..." : "Send"}
         </SendButton>
       </ChatContainer>
-      <IframeContainer>
-        <Iframe src="http://localhost:4000" />
-      </IframeContainer>
     </Container>
   );
 }

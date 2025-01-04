@@ -3,22 +3,19 @@ const fs = require("fs");
 const { mkdirp } = require("mkdirp");
 const { dirname } = require("path");
 const { exec } = require("child_process");
-const { type } = require("os");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const OUTDIR = process.env.OUTDIR;
-const MODEL = "gpt-4o"; // or gpt-4-0613
-
-if (!OUTDIR) {
-  throw new Error("OUTDIR environment variable is required");
-}
+const OUTDIR = process.env.CODEIT_OUTPUT_FOLDER || ".";
+const MODEL = process.env.CODEIT_MODEL || "gpt-4o"; // or gpt-4-0613
 
 if (!fs.existsSync(OUTDIR)) {
   fs.mkdirSync(OUTDIR, { recursive: true });
 }
+
+console.log("OUTDIR:", OUTDIR);
 
 const conversationPath = `${OUTDIR}/conversation.json`;
 
@@ -29,8 +26,24 @@ if (fs.existsSync(conversationPath)) {
 }
 
 conversation = conversation.filter(
-  (msg) => msg.role !== "system" && msg.role !== "function"
+  (msg) =>
+    msg.role !== "system" && msg.role !== "function" && msg.role !== "developer"
 );
+
+const developerPath = `${OUTDIR}/DEVELOPER.md`;
+
+let developerMessage;
+
+if (fs.existsSync(developerPath)) {
+  developerMessage = fs.readFileSync(developerPath, "utf-8");
+} else {
+  developerMessage = fs.readFileSync(`${__dirname}/DEVELOPER.md`, "utf-8");
+}
+
+conversation.unshift({
+  role: "developer",
+  content: developerMessage,
+});
 
 exports.handler = async (event) => {
   const { messages } = JSON.parse(event.body);
@@ -74,11 +87,16 @@ async function evaluateResponse(response) {
 
   if (message.tool_calls) {
     // The model wants to call a function
-    const functionCall = message.tool_calls[0];
-    const functionResponseMsg = await handleFunctionCall(functionCall);
-    // Push the function call message and the function's response to the conversation
+
     conversation.push(message);
-    conversation.push(functionResponseMsg);
+
+    await Promise.all(
+      message.tool_calls.map(async (functionCall) => {
+        const functionResponseMsg = await handleFunctionCall(functionCall);
+        // Push the function call message and the function's response to the conversation
+        conversation.push(functionResponseMsg);
+      })
+    );
 
     // Now we ask ChatGPT again, providing the function result, so it can finalize its answer
     const response = await createChatCompletionWithRetries({
@@ -99,13 +117,10 @@ async function evaluateResponse(response) {
 const execAsync = (command, options) => {
   return new Promise((resolve, reject) => {
     exec(command, options, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-        return;
-      }
       resolve({
         stdout,
         stderr,
+        error,
       });
     });
   });

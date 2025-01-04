@@ -1,27 +1,27 @@
 {
-  "name": "realtime",
+  "name": "codechat",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "build": "cd ui/web; webpack --mode production",
+    "dev": "cd ui/web; webpack serve --mode development"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Andrea Gariboldi",
+  "license": "MIT",
   "dependencies": {
-    "@openai/realtime-api-beta": "github:openai/openai-realtime-api-beta",
-    "aws-sdk": "^2.1692.0",
     "axios": "^1.7.9",
-    "crypto": "^1.0.1",
-    "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mic": "^2.1.2",
     "mkdirp": "^3.0.1",
-    "openai": "^4.77.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "readline": "^1.3.0",
-    "speaker": "^0.5.5",
-    "styled-components": "^6.1.13"
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-react": "^7.26.3",
+    "babel-loader": "^9.2.1",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.0"
   }
 }
