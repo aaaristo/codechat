@@ -42,7 +42,7 @@ for (const path in apiGateway) {
   });
 }
 
-const port = process.env.CODEIT_PORT || 3000;
+const port = process.env.CODECHAT_PORT || 3000;
 
 app.listen(+port, () => {
   console.log(`Server is running on port ${port}`);

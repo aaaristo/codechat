@@ -8,8 +8,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const OUTDIR = process.env.CODEIT_OUTPUT_FOLDER || ".";
-const MODEL = process.env.CODEIT_MODEL || "gpt-4o"; // or gpt-4-0613
+const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
+const MODEL = process.env.CODECHAT_MODEL || "gpt-4o"; // or gpt-4-0613
 
 if (!fs.existsSync(OUTDIR)) {
   fs.mkdirSync(OUTDIR, { recursive: true });

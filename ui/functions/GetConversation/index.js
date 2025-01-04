@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-const OUTDIR = process.env.CODEIT_OUTPUT_FOLDER || ".";
+const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
 
 if (!OUTDIR) {
   throw new Error("OUTDIR environment variable is required");
