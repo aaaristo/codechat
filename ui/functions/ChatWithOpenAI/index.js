@@ -1,7 +1,7 @@
 const OpenAI = require("openai");
 const fs = require("fs");
 const { mkdirp } = require("mkdirp");
-const { dirname } = require("path");
+const { dirname, resolve } = require("path");
 const { exec } = require("child_process");
 
 const openai = new OpenAI({
@@ -9,6 +9,7 @@ const openai = new OpenAI({
 });
 
 const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
+const RESOLVED_OUTDIR = resolve(OUTDIR);
 const MODEL = process.env.CODECHAT_MODEL || "gpt-4o"; // or gpt-4-0613
 
 if (!fs.existsSync(OUTDIR)) {
@@ -32,18 +33,23 @@ conversation = conversation.filter(
 
 const developerPath = `${OUTDIR}/DEVELOPER.md`;
 
-let developerMessage;
+conversation = conversation.filter((x) => x.role !== "developer");
 
-if (fs.existsSync(developerPath)) {
-  developerMessage = fs.readFileSync(developerPath, "utf-8");
-} else {
-  developerMessage = fs.readFileSync(`${__dirname}/DEVELOPER.md`, "utf-8");
-}
+let developerMessage = fs.readFileSync(`${__dirname}/DEVELOPER.md`, "utf-8");
 
-conversation.unshift({
+conversation.push({
   role: "developer",
   content: developerMessage,
 });
+
+if (fs.existsSync(developerPath)) {
+  console.log("Developer message found");
+  const developerMessage = fs.readFileSync(developerPath, "utf-8");
+  conversation.push({
+    role: "developer",
+    content: developerMessage,
+  });
+}
 
 exports.handler = async (event) => {
   const { messages } = JSON.parse(event.body);
@@ -70,8 +76,10 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(
       "Error in contacting OpenAI API or handling local files:",
-      error.message
+      error.message,
+      error.code
     );
+
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }),
@@ -136,11 +144,22 @@ async function createChatCompletionWithRetries(args) {
       if (error.code === "rate_limit_exceeded") {
         console.log("Rate limit exceeded. Retrying in 5 seconds...");
         await new Promise((resolve) => setTimeout(resolve, 5000));
+      } else if (error.code === "context_length_exceeded") {
+        conversation = conversation.filter(
+          (x) => x.role !== "tool" && !x.tool_calls
+        );
+        args.messages = conversation;
+        console.log("Context limit exceeded. Retrying in 5 seconds...");
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      } else {
+        console.error(
+          "Error in contacting OpenAI API:",
+          error.message,
+          error.code
+        );
+
+        throw error;
       }
-
-      console.error("Error in contacting OpenAI API:", error.message);
-
-      throw error;
     }
   }
 
@@ -158,8 +177,13 @@ async function handleFunctionCall(functionCall) {
     const args = JSON.parse(argsJson);
     result = await fn[name](args);
   } catch (error) {
-    console.error("Error handling function call:", error);
-    throw error;
+    console.error("Error handling function call:", error, name, argsJson);
+
+    if (error instanceof SyntaxError) {
+      result = `Error parsing arguments: ${error.message}`;
+    } else {
+      throw error;
+    }
   }
 
   // Return the function result to ChatGPT as a message from "function"
@@ -251,7 +275,8 @@ const functions = [
   },
   {
     name: "listProjectFiles",
-    description: "Allows to list all files in the project folder",
+    description:
+      "Allows to list all files in the project folder, paginated, please go through the pages by incrementing the page number until total pages are reached",
     parameters: {
       type: "object",
       properties: {
@@ -260,8 +285,28 @@ const functions = [
           description:
             "The path of the folder relative to the project root folder",
         },
+        page: {
+          type: "number",
+          description: "The page number",
+        },
       },
       required: ["path"],
+    },
+  },
+  {
+    name: "findProjectFilesByName",
+    description:
+      "Allows to find files in the project folder, mathing the search query",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "The search query to find files in the project root folder",
+        },
+      },
+      required: ["query"],
     },
   },
   {
@@ -294,12 +339,11 @@ fn.saveProjectFile = async (args) => {
 
   console.log("saveProjectFile", path);
 
-  await mkdirp(`${OUTDIR}/${dirname(path)}`);
+  const resolvedPath = assertInOutputDir(path);
 
-  await fs.promises.writeFile(
-    `${OUTDIR}/${path}`,
-    Buffer.from(content, encoding)
-  );
+  await mkdirp(dirname(resolvedPath));
+
+  await fs.promises.writeFile(resolvedPath, Buffer.from(content, encoding));
 
   return "File created successfully";
 };
@@ -309,7 +353,9 @@ fn.deleteProjectFile = async (args) => {
 
   console.log("deleteProjectFile", path);
 
-  await fs.promises.unlink(`${OUTDIR}/${path}`);
+  const resolvedPath = assertInOutputDir(path);
+
+  await fs.promises.unlink(resolvedPath);
 
   return "File deleted successfully";
 };
@@ -319,7 +365,9 @@ fn.deleteProjectFolder = async (args) => {
 
   console.log("deleteProjectFolder", path);
 
-  await fs.promises.rm(`${OUTDIR}/${path}`, { recursive: true });
+  const resolvedPath = assertInOutputDir(path);
+
+  await fs.promises.rm(resolvedPath, { recursive: true });
 
   return "Folder deleted successfully";
 };
@@ -329,21 +377,54 @@ fn.readProjectFile = async (args) => {
 
   console.log("readProjectFile", path, encoding);
 
-  const content = await fs.promises.readFile(`${OUTDIR}/${path}`, encoding);
+  const resolvedPath = assertInOutputDir(path);
 
-  return content;
+  try {
+    const content = await fs.promises.readFile(resolvedPath, encoding);
+
+    return content;
+  } catch (error) {
+    return `Error reading file: ${error.message}`;
+  }
 };
 
 fn.listProjectFiles = async (args) => {
-  const { path } = args;
+  const { path, page = 1 } = args;
 
-  console.log("listProjectFiles", path);
+  const pageSize = 100;
 
-  const files = await fs.promises.readdir(`${OUTDIR}/${path}`, {
+  console.log("listProjectFiles", path, page, pageSize);
+
+  const resolvedPath = assertInOutputDir(path);
+
+  if (!fs.existsSync(resolvedPath)) {
+    return {
+      files: [],
+      totalFiles: 0,
+      currentPage: 1,
+      totalPages: 1,
+      instructions: `The path ${path} does not exist`,
+    };
+  }
+
+  const files = await fs.promises.readdir(resolvedPath, {
     recursive: true,
   });
 
-  return files;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const pagedFiles = files.slice(start, end);
+
+  return {
+    files: pagedFiles,
+    totalFiles: files.length,
+    currentPage: page,
+    totalPages: Math.ceil(files.length / pageSize),
+    instructions:
+      end < files.length
+        ? "There are more files, please go to the next page"
+        : "You fetched all files",
+  };
 };
 
 fn.executeCommand = async (args) => {
@@ -353,8 +434,32 @@ fn.executeCommand = async (args) => {
 
   const output = await execAsync(command, {
     env: process.env,
-    cwd: `${OUTDIR}/${path}`,
+    cwd: assertInOutputDir(path),
   });
 
   return output;
+};
+
+fn.findProjectFilesByName = async (args) => {
+  const { query } = args;
+
+  console.log("findProjectFilesByName", query);
+
+  const files = await fs.promises.readdir(`${OUTDIR}`, {
+    recursive: true,
+  });
+
+  const matchingFiles = files.filter((file) => file.includes(query));
+
+  return matchingFiles;
+};
+
+const assertInOutputDir = (path) => {
+  const resolvedPath = resolve(OUTDIR, path);
+
+  if (!resolvedPath.startsWith(RESOLVED_OUTDIR)) {
+    throw new Error(`Path must be inside the output directory: ${OUTDIR}`);
+  }
+
+  return resolvedPath;
 };
