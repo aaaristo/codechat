@@ -10,7 +10,7 @@ if (!fs.existsSync(OUTDIR)) {
   fs.mkdirSync(OUTDIR, { recursive: true });
 }
 
-const conversationPath = `${OUTDIR}/conversation.json`;
+const conversationPath = `${OUTDIR}/codechat.json`;
 
 exports.handler = async (event) => {
   try {

@@ -17,7 +17,7 @@ if (!fs.existsSync(OUTDIR)) {
 
 console.log("OUTDIR:", OUTDIR);
 
-const conversationPath = `${OUTDIR}/conversation.json`;
+const conversationPath = `${OUTDIR}/codechat.json`;
 
 let conversation = [];
 if (fs.existsSync(conversationPath)) {
