@@ -6,7 +6,8 @@ CodeChat is a chat application using OpenAI to help you code faster. It can be r
 
 - Chat with OpenAI to get coding assistance
 - Scaffold your project with ease
-- Handles file operations securely
+- Read and write files in your project folder
+- Run commands to install dependencies, start your project, and more
 
 ## Installation
 
