@@ -1,6 +1,6 @@
 # CodeChat
 
-CodeChat is a chat application using OpenAI to help you code faster. It can be run via `npx codechat` in an empty directory to help you scaffold your project. And enables OpenAI models to read and write files in your project folder, and to run commands to install dependencies, start your project, and more.
+CodeChat is an experimental chat application using OpenAI to help you code faster. It can be run via `npx codechat` in an empty directory to help you scaffold your project. And enables OpenAI models to read and write files in your project folder, and to run commands to install dependencies, start your project, and more.
 
 ## Features
 
