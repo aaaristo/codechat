@@ -1,7 +1,7 @@
 {
   "name": "codechat",
   "version": "1.0.0",
-  "description": "",
+  "description": "A chat application using OpenAI to help you code faster",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -10,11 +10,25 @@
   },
   "author": "Andrea Gariboldi",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aaaristo/codechat.git"
+  },
+  "keywords": [
+    "chat",
+    "openai",
+    "code",
+    "assistant"
+  ],
   "dependencies": {
     "axios": "^1.7.9",
     "express": "^4.21.2",
     "mkdirp": "^3.0.1",
-    "openai": "^4.77.0"
+    "openai": "^4.77.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^9.0.1",
+    "styled-components": "^6.1.13"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -23,5 +37,8 @@
     "webpack": "^5.97.1",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.0"
+  },
+  "bin": {
+    "codechat": "./index.js"
   }
 }

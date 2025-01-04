@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const express = require("express");
 
 const app = express();
@@ -16,7 +17,7 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: "50mb" }));
 
-app.use(express.static("ui/web/public"));
+app.use(express.static(`${__dirname}/ui/web/public`));
 
 const apiGateway = require("./ui/api-gateway");
 
