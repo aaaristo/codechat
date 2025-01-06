@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 const express = require("express");
+const { createServer } = require("http");
+const { WebSocketServer } = require("ws");
 
 const app = express();
+const server = createServer(app);
 
 if (!process.env.OPENAI_API_KEY) {
   console.error("OPENAI_API_KEY is not set");
@@ -32,6 +35,7 @@ for (const path in apiGateway) {
     try {
       const { statusCode, body } = await handler({
         body: JSON.stringify(req.body),
+        sendMessage,
       });
 
       res.status(statusCode).json(JSON.parse(body));
@@ -42,8 +46,46 @@ for (const path in apiGateway) {
   });
 }
 
+// WebSocket server
+const wss = new WebSocketServer({ noServer: true });
+
+const connections = [];
+
+wss.on("connection", (ws) => {
+  console.log("WebSocket connection established");
+
+  ws.on("message", (message) => {
+    console.log("Received:", message);
+  });
+
+  ws.on("close", () => {
+    console.log("WebSocket connection closed");
+    connections.splice(connections.indexOf(ws), 1);
+  });
+
+  connections.push(ws);
+});
+
+server.on("upgrade", (request, socket, head) => {
+  const pathname = request.url;
+
+  if (pathname === "/ws") {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit("connection", ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
 const port = process.env.CODECHAT_PORT || 3000;
 
-app.listen(+port, () => {
+server.listen(+port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+const sendMessage = (message) => {
+  for (const ws of connections) {
+    ws.send(message);
+  }
+};

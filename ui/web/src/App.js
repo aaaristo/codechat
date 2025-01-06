@@ -96,6 +96,21 @@ const RemoveButton = styled.button`
   line-height: 14px;
 `;
 
+const StyledList = styled.ul`
+  background-color: #e0f7fa;
+  padding: 10px;
+  border-radius: 5px;
+  list-style-type: none;
+`;
+
+const StyledListItem = styled.li`
+  margin: 5px 0;
+`;
+
+const CodeMessage = styled.div`
+  font-family: "Courier New", Courier, monospace;
+`;
+
 function App() {
   const [message, setMessage] = useState("");
   const [image, setImage] = useState(null);
@@ -124,6 +139,23 @@ function App() {
     };
 
     fetchConversation();
+
+    // Connect to WebSocket server
+    const ws = new WebSocket(`${baseUrl}/ws`);
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      setChatLog((prevChatLog) => [...prevChatLog, message]);
+      console.log("message", message);
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
   const handleSend = async () => {
@@ -207,6 +239,19 @@ function App() {
               <strong>{entry.user}:</strong>{" "}
               {entry.image_url ? (
                 <ChatImage src={entry.image_url} alt="User uploaded" />
+              ) : entry.tool_calls ? (
+                <StyledList>
+                  {entry.tool_calls.map((x, i) => (
+                    <StyledListItem key={i}>
+                      <CodeMessage>
+                        <strong>{x.function.name}</strong>{" "}
+                        {x.function.arguments.path ||
+                          x.function.arguments.query ||
+                          x.function.arguments.command}
+                      </CodeMessage>
+                    </StyledListItem>
+                  ))}
+                </StyledList>
               ) : (
                 <Markdown>{entry.message}</Markdown>
               )}

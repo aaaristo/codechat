@@ -64,7 +64,7 @@ exports.handler = async (event) => {
       tool_choice: "auto",
     });
 
-    const completionMessage = await evaluateResponse(response);
+    const completionMessage = await evaluateResponse(response, event);
 
     // Write updated conversation history back to the file
     fs.writeFileSync(conversationPath, JSON.stringify(conversation, null, 2));
@@ -77,7 +77,8 @@ exports.handler = async (event) => {
     console.error(
       "Error in contacting OpenAI API or handling local files:",
       error.message,
-      error.code
+      error.code,
+      error.stack
     );
 
     return {
@@ -87,7 +88,7 @@ exports.handler = async (event) => {
   }
 };
 
-async function evaluateResponse(response) {
+async function evaluateResponse(response, event) {
   // console.log(JSON.stringify(response, null, 4));
 
   // Grab the first choice
@@ -97,6 +98,24 @@ async function evaluateResponse(response) {
     // The model wants to call a function
 
     conversation.push(message);
+
+    event.sendMessage(
+      JSON.stringify({
+        user: "AI",
+        tool_calls: message.tool_calls.map((x) => {
+          const arguments = JSON.parse(x.function.arguments);
+          delete arguments.content;
+
+          return {
+            ...x,
+            function: {
+              ...x.function,
+              arguments,
+            },
+          };
+        }),
+      })
+    );
 
     await Promise.all(
       message.tool_calls.map(async (functionCall) => {
@@ -114,7 +133,7 @@ async function evaluateResponse(response) {
       tool_choice: "auto",
     });
 
-    return evaluateResponse(response);
+    return evaluateResponse(response, event);
   } else {
     // Regular (non-function-calling) response
     conversation.push(message);
@@ -312,7 +331,26 @@ const functions = [
   {
     name: "executeCommand",
     description:
-      "Allows to execute commands like npm / git or aws cli relative to the project folder",
+      "Allows to execute commands like npm / git or aws cli relative to the project folder, and returns the output so you can check it",
+    parameters: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: "The path under which the command should be executed",
+        },
+        command: {
+          type: "string",
+          description: "The command that should be executed",
+        },
+      },
+      required: ["path", "command"],
+    },
+  },
+  {
+    name: "startCommand",
+    description:
+      "Allows to execute commands like npm / git or aws cli relative to the project folder similar to executeCommand, but doe not wait for the command to finish, useful for npm start like commands",
     parameters: {
       type: "object",
       properties: {
@@ -438,6 +476,38 @@ fn.executeCommand = async (args) => {
   });
 
   return output;
+};
+
+fn.startCommand = async (args) => {
+  const { path, command } = args;
+
+  console.log("startCommand", path, command);
+
+  return new Promise((resolve, reject) => {
+    const child = exec(command, {
+      env: process.env,
+      cwd: assertInOutputDir(path),
+    });
+
+    let output = "";
+
+    child.stdout.on("data", (data) => {
+      output += data;
+    });
+
+    child.stderr.on("data", (data) => {
+      output += data;
+    });
+
+    setTimeout(() => {
+      console.log("startCommand output", output);
+      resolve(output);
+    }, 10000);
+
+    child.on("error", (error) => {
+      reject(`Error starting command: ${error.message}`);
+    });
+  });
 };
 
 fn.findProjectFilesByName = async (args) => {
