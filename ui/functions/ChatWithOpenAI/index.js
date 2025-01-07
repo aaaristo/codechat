@@ -1,6 +1,7 @@
 const OpenAI = require("openai");
 const fs = require("fs");
-const { resolve } = require("path");
+const { formatToolCalls } = require("../utils");
+
 const tools = require("./tools");
 
 const openai = new OpenAI({
@@ -8,7 +9,6 @@ const openai = new OpenAI({
 });
 
 const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
-const RESOLVED_OUTDIR = resolve(OUTDIR);
 const MODEL = process.env.CODECHAT_MODEL || "gpt-4o"; // or gpt-4-0613
 
 if (!fs.existsSync(OUTDIR)) {

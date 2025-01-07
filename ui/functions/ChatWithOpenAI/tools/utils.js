@@ -1,5 +1,8 @@
 const { resolve } = require("path");
 
+const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
+const RESOLVED_OUTDIR = resolve(OUTDIR);
+
 exports.assertInOutputDir = (path) => {
   const resolvedPath = resolve(OUTDIR, path);
 

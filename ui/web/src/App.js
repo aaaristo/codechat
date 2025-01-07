@@ -271,7 +271,7 @@ function App() {
           </ImagePreviewContainer>
         )}
         <SendButton onClick={handleSend} disabled={loading}>
-          {loading ? "Sending..." : "Send"}
+          {loading ? "Thinking..." : "Send"}
         </SendButton>
       </ChatContainer>
     </Container>

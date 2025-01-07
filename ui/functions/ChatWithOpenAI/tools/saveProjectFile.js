@@ -1,6 +1,6 @@
 const { writeFile } = require("fs").promises;
 const { dirname } = require("path");
-const mkdirp = require("mkdirp");
+const { mkdirp } = require("mkdirp");
 const { assertInOutputDir } = require("./utils");
 
 module.exports = {
