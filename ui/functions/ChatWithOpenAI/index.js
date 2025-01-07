@@ -1,8 +1,7 @@
 const OpenAI = require("openai");
 const fs = require("fs");
-const { mkdirp } = require("mkdirp");
-const { dirname, resolve } = require("path");
-const { exec } = require("child_process");
+const { resolve } = require("path");
+const tools = require("./tools");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -49,6 +48,13 @@ if (fs.existsSync(developerPath)) {
     role: "developer",
     content: developerMessage,
   });
+}
+
+const fn = {};
+
+for (const tool of tools) {
+  fn[tool.function.name] = tool.resolver;
+  delete tool.resolver;
 }
 
 exports.handler = async (event) => {
@@ -102,18 +108,7 @@ async function evaluateResponse(response, event) {
     event.sendMessage(
       JSON.stringify({
         user: "AI",
-        tool_calls: message.tool_calls.map((x) => {
-          const arguments = JSON.parse(x.function.arguments);
-          delete arguments.content;
-
-          return {
-            ...x,
-            function: {
-              ...x.function,
-              arguments,
-            },
-          };
-        }),
+        tool_calls: formatToolCalls(message.tool_calls),
       })
     );
 
@@ -140,18 +135,6 @@ async function evaluateResponse(response, event) {
     return message.content;
   }
 }
-
-const execAsync = (command, options) => {
-  return new Promise((resolve, reject) => {
-    exec(command, options, (error, stdout, stderr) => {
-      resolve({
-        stdout,
-        stderr,
-        error,
-      });
-    });
-  });
-};
 
 async function createChatCompletionWithRetries(args) {
   let response;
@@ -213,323 +196,6 @@ async function handleFunctionCall(functionCall) {
     content: JSON.stringify(result),
     tool_call_id: id,
   };
+
   return functionResponse;
 }
-
-const functions = [
-  {
-    name: "saveProjectFile",
-    description:
-      "Allows to create a file in the project folder, for binary files it is possible to send the content via Base64",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description:
-            "The path of the file relative to the project root folder",
-        },
-        content: {
-          type: "string",
-          description: "The javascript code for the lambda function",
-        },
-        encoding: {
-          type: "string",
-          description: "The encoding of the content, default is utf8",
-          enum: ["utf8", "base64"],
-        },
-      },
-      required: ["path", "content", "encoding"],
-    },
-  },
-  {
-    name: "deleteProjectFile",
-    description: "Allows to delete a file in the project folder",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description:
-            "The path of the file relative to the project root folder",
-        },
-      },
-      required: ["path"],
-    },
-  },
-  {
-    name: "deleteProjectFolder",
-    description: "Allows to delete a folder recursively",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description:
-            "The path of the folder relative to the project root folder",
-        },
-      },
-      required: ["path"],
-    },
-  },
-  {
-    name: "readProjectFile",
-    description: "Allows to read a file in the project folder",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description:
-            "The path of the file relative to the project root folder",
-        },
-        encoding: {
-          type: "string",
-          description: "The encoding of the content, default is utf8",
-          enum: ["utf8", "base64"],
-        },
-      },
-      required: ["path"],
-    },
-  },
-  {
-    name: "listProjectFiles",
-    description:
-      "Allows to list all files in the project folder, paginated, please go through the pages by incrementing the page number until total pages are reached",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description:
-            "The path of the folder relative to the project root folder",
-        },
-        page: {
-          type: "number",
-          description: "The page number",
-        },
-      },
-      required: ["path"],
-    },
-  },
-  {
-    name: "findProjectFilesByName",
-    description:
-      "Allows to find files in the project folder, mathing the search query",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description:
-            "The search query to find files in the project root folder",
-        },
-      },
-      required: ["query"],
-    },
-  },
-  {
-    name: "executeCommand",
-    description:
-      "Allows to execute commands like npm / git or aws cli relative to the project folder, and returns the output so you can check it",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description: "The path under which the command should be executed",
-        },
-        command: {
-          type: "string",
-          description: "The command that should be executed",
-        },
-      },
-      required: ["path", "command"],
-    },
-  },
-  {
-    name: "startCommand",
-    description:
-      "Allows to execute commands like npm / git or aws cli relative to the project folder similar to executeCommand, but doe not wait for the command to finish, useful for npm start like commands",
-    parameters: {
-      type: "object",
-      properties: {
-        path: {
-          type: "string",
-          description: "The path under which the command should be executed",
-        },
-        command: {
-          type: "string",
-          description: "The command that should be executed",
-        },
-      },
-      required: ["path", "command"],
-    },
-  },
-];
-
-const tools = functions.map((f) => ({ type: "function", function: f }));
-
-const fn = {};
-
-fn.saveProjectFile = async (args) => {
-  const { path, content, encoding } = args;
-
-  console.log("saveProjectFile", path);
-
-  const resolvedPath = assertInOutputDir(path);
-
-  await mkdirp(dirname(resolvedPath));
-
-  await fs.promises.writeFile(resolvedPath, Buffer.from(content, encoding));
-
-  return "File created successfully";
-};
-
-fn.deleteProjectFile = async (args) => {
-  const { path } = args;
-
-  console.log("deleteProjectFile", path);
-
-  const resolvedPath = assertInOutputDir(path);
-
-  await fs.promises.unlink(resolvedPath);
-
-  return "File deleted successfully";
-};
-
-fn.deleteProjectFolder = async (args) => {
-  const { path } = args;
-
-  console.log("deleteProjectFolder", path);
-
-  const resolvedPath = assertInOutputDir(path);
-
-  await fs.promises.rm(resolvedPath, { recursive: true });
-
-  return "Folder deleted successfully";
-};
-
-fn.readProjectFile = async (args) => {
-  const { path, encoding } = args;
-
-  console.log("readProjectFile", path, encoding);
-
-  const resolvedPath = assertInOutputDir(path);
-
-  try {
-    const content = await fs.promises.readFile(resolvedPath, encoding);
-
-    return content;
-  } catch (error) {
-    return `Error reading file: ${error.message}`;
-  }
-};
-
-fn.listProjectFiles = async (args) => {
-  const { path, page = 1 } = args;
-
-  const pageSize = 100;
-
-  console.log("listProjectFiles", path, page, pageSize);
-
-  const resolvedPath = assertInOutputDir(path);
-
-  if (!fs.existsSync(resolvedPath)) {
-    return {
-      files: [],
-      totalFiles: 0,
-      currentPage: 1,
-      totalPages: 1,
-      instructions: `The path ${path} does not exist`,
-    };
-  }
-
-  const files = await fs.promises.readdir(resolvedPath, {
-    recursive: true,
-  });
-
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const pagedFiles = files.slice(start, end);
-
-  return {
-    files: pagedFiles,
-    totalFiles: files.length,
-    currentPage: page,
-    totalPages: Math.ceil(files.length / pageSize),
-    instructions:
-      end < files.length
-        ? "There are more files, please go to the next page"
-        : "You fetched all files",
-  };
-};
-
-fn.executeCommand = async (args) => {
-  const { path, command } = args;
-
-  console.log("executeCommand", path, command);
-
-  const output = await execAsync(command, {
-    env: process.env,
-    cwd: assertInOutputDir(path),
-  });
-
-  return output;
-};
-
-fn.startCommand = async (args) => {
-  const { path, command } = args;
-
-  console.log("startCommand", path, command);
-
-  return new Promise((resolve, reject) => {
-    const child = exec(command, {
-      env: process.env,
-      cwd: assertInOutputDir(path),
-    });
-
-    let output = "";
-
-    child.stdout.on("data", (data) => {
-      output += data;
-    });
-
-    child.stderr.on("data", (data) => {
-      output += data;
-    });
-
-    setTimeout(() => {
-      console.log("startCommand output", output);
-      resolve(output);
-    }, 10000);
-
-    child.on("error", (error) => {
-      reject(`Error starting command: ${error.message}`);
-    });
-  });
-};
-
-fn.findProjectFilesByName = async (args) => {
-  const { query } = args;
-
-  console.log("findProjectFilesByName", query);
-
-  const files = await fs.promises.readdir(`${OUTDIR}`, {
-    recursive: true,
-  });
-
-  const matchingFiles = files.filter((file) => file.includes(query));
-
-  return matchingFiles;
-};
-
-const assertInOutputDir = (path) => {
-  const resolvedPath = resolve(OUTDIR, path);
-
-  if (!resolvedPath.startsWith(RESOLVED_OUTDIR)) {
-    throw new Error(`Path must be inside the output directory: ${OUTDIR}`);
-  }
-
-  return resolvedPath;
-};

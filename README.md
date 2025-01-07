@@ -21,7 +21,7 @@ npx codechat
 
 The UI is a simple chat interface that allows you to interact with OpenAI. You can ask questions, upload images, and monitor
 what the model is doing in the console. By default you can access it on `http://localhost:3000`. The conversation will be
-kept for context in your project folder (`codechat.json`).
+kept for context in your project folder (`codechat.json`). You can also define a `DEVELOPER.md` file in your root folder to explain the Agent how to behave.
 
 ## Environment Variables
 Make sure to set the following environment variables:

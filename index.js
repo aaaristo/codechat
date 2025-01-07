@@ -7,7 +7,9 @@ const app = express();
 const server = createServer(app);
 
 if (!process.env.OPENAI_API_KEY) {
-  console.error("OPENAI_API_KEY is not set");
+  console.error(
+    "The OPENAI_API_KEY environment variable is not set. Get one here https://platform.openai.com/api-keys"
+  );
   process.exit(1);
 }
 

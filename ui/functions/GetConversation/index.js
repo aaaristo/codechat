@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { formatToolCalls } = require("../utils");
 
 const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
 
@@ -31,11 +32,7 @@ exports.handler = async (event) => {
       .map((msg) => ({
         user: msg.role === "user" ? "You" : "AI",
         message: msg.role === "user" ? msg.content[0].text : msg.content,
-        tool_calls: msg.tool_calls?.map((x) => {
-          x.function.arguments = JSON.parse(x.function.arguments);
-          delete x.function.arguments.content;
-          return x;
-        }),
+        tool_calls: formatToolCalls(msg.tool_calls),
       }));
 
     return {
