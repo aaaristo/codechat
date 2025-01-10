@@ -1,5 +1,5 @@
-const { exists, readdir } = require("fs").promises;
-const { assertInOutputDir } = require("./utils");
+const { readdir } = require("fs").promises;
+const { assertInOutputDir, folderExists } = require("./utils");
 
 module.exports = {
   type: "function",
@@ -32,7 +32,7 @@ module.exports = {
 
     const resolvedPath = assertInOutputDir(path);
 
-    if (!(await exists(resolvedPath))) {
+    if (!(await folderExists(resolvedPath))) {
       return {
         files: [],
         totalFiles: 0,

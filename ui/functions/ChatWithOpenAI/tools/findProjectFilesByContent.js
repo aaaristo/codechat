@@ -4,9 +4,9 @@ const { OUTDIR } = require("./utils");
 module.exports = {
   type: "function",
   function: {
-    name: "findProjectFilesByName",
+    name: "findProjectFilesByContent",
     description:
-      "Allows to find files in the project folder, mathing the search query",
+      "Allows to find files in the project folder, mathing the search query in the content of the files",
     parameters: {
       type: "object",
       properties: {
@@ -22,13 +22,21 @@ module.exports = {
   resolver: async (args) => {
     const { query } = args;
 
-    console.log("findProjectFilesByName", query);
+    console.log("findProjectFilesByContent", query);
 
     const files = await readdir(OUTDIR, {
       recursive: true,
     });
 
-    const matchingFiles = files.filter((file) => file.includes(query));
+    const matchingFiles = [];
+
+    for (const file of files) {
+      const content = await readFile(file, "utf8");
+
+      if (content.includes(query)) {
+        matchingFiles.push(file);
+      }
+    }
 
     return matchingFiles;
   },

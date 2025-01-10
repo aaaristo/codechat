@@ -1,5 +1,6 @@
 module.exports = [
   require("./findProjectFilesByName"),
+  require("./findProjectFilesByContent"),
   require("./listProjectFiles"),
   require("./readProjectFile"),
   require("./saveProjectFile"),
@@ -7,4 +8,5 @@ module.exports = [
   require("./deleteProjectFile"),
   require("./executeCommand"),
   require("./startCommand"),
+  require("./readWebPage"),
 ];

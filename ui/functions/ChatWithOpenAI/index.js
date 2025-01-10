@@ -67,7 +67,7 @@ exports.handler = async (event) => {
       model: MODEL,
       messages: [...conversation, { role: "user", content: messages }],
       tools,
-      tool_choice: "auto",
+      tool_choice: "required",
     });
 
     const completionMessage = await evaluateResponse(response, event);

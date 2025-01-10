@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import Markdown from "react-markdown";
@@ -185,9 +185,9 @@ function App() {
     try {
       const response = await axios.post(apiUrl, requestBody);
       const aiMessage = response.data.message;
-      setChatLog(
+      setChatLog((prevChatLog) =>
         [
-          ...chatLog,
+          ...prevChatLog,
           { user: "You", message },
           image ? { user: "You", image_url } : null,
           { user: "AI", message: aiMessage },
@@ -245,9 +245,13 @@ function App() {
                     <StyledListItem key={i}>
                       <CodeMessage>
                         <strong>{x.function.name}</strong>{" "}
-                        {x.function.arguments.path ||
-                          x.function.arguments.query ||
-                          x.function.arguments.command}
+                        {Object.keys(x.function.arguments).map((key, i) => (
+                          <Fragment key={i}>
+                            <span>
+                              <u>{key}</u>: {x.function.arguments[key]}
+                            </span>{" "}
+                          </Fragment>
+                        ))}
                       </CodeMessage>
                     </StyledListItem>
                   ))}
