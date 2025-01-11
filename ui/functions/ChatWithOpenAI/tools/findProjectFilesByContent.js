@@ -1,4 +1,4 @@
-const { readdir } = require("fs").promises;
+const { readdir, readFile } = require("fs").promises;
 const { OUTDIR } = require("./utils");
 
 module.exports = {
@@ -31,10 +31,14 @@ module.exports = {
     const matchingFiles = [];
 
     for (const file of files) {
-      const content = await readFile(file, "utf8");
+      try {
+        const content = await readFile(file, "utf8");
 
-      if (content.includes(query)) {
-        matchingFiles.push(file);
+        if (content.includes(query)) {
+          matchingFiles.push(file);
+        }
+      } catch (error) {
+        if (error.code !== "EISDIR") throw error;
       }
     }
 

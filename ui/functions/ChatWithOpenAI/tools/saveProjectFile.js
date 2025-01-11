@@ -33,7 +33,7 @@ module.exports = {
   resolver: async (args) => {
     const { path, content, encoding } = args;
 
-    console.log("saveProjectFile", path);
+    console.log("saveProjectFile", path, encoding);
 
     const resolvedPath = assertInOutputDir(path);
 
