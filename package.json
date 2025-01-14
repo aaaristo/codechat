@@ -21,6 +21,7 @@
     "assistant"
   ],
   "dependencies": {
+    "@azure/identity": "^4.5.0",
     "axios": "^1.7.9",
     "express": "^4.21.2",
     "mkdirp": "^3.0.1",
@@ -42,5 +43,8 @@
   },
   "bin": {
     "codechat": "./index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

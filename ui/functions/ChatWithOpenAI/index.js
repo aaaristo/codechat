@@ -1,12 +1,40 @@
-const OpenAI = require("openai");
+const { AzureOpenAI } = require("openai");
 const fs = require("fs");
 const { formatToolCalls } = require("../utils");
+const {
+  getBearerTokenProvider,
+  DefaultAzureCredential,
+} = require("@azure/identity");
 
 const tools = require("./tools");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai;
+
+if (process.env.OPENAI_AZURE_ENDPOINT) {
+  let credentials;
+
+  if (process.env.OPENAI_API_KEY) {
+    credentials = {
+      apiKey: process.env.OPENAI_API_KEY,
+    };
+  } else {
+    const credential = new DefaultAzureCredential();
+    const scope = "https://cognitiveservices.azure.com/.default";
+    credentials = {
+      azureADTokenProvider: getBearerTokenProvider(credential, scope),
+    };
+  }
+
+  openai = new AzureOpenAI({
+    ...credentials,
+    endpoint: process.env.OPENAI_AZURE_ENDPOINT,
+    apiVersion: process.env.OPENAI_API_VERSION,
+  });
+} else {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 const OUTDIR = process.env.CODECHAT_OUTPUT_FOLDER || ".";
 const MODEL = process.env.CODECHAT_MODEL || "gpt-4o"; // or gpt-4-0613
@@ -49,6 +77,8 @@ if (fs.existsSync(developerPath)) {
     content: developerMessage,
   });
 }
+
+conversation = conversation.filter((x) => x.role !== "developer");
 
 const fn = {};
 

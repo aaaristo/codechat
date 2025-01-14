@@ -27,6 +27,8 @@ kept for context in your project folder (`codechat.json`). You can also define a
 Make sure to set the following environment variables:
 
 * OPENAI_API_KEY: Your OpenAI API key. This is required to interact with the OpenAI API.
+* OPENAI_AZURE_ENDPOINT (optional): In case of using Azure, the endpoint to interact with the OpenAI API.
+* OPENAI_API_VERSION (optional): In case of using Azure, the API version to use.
 * CODECHAT_PORT (optional): The port on which the server will run. Defaults to `3000`.
 * CODECHAT_MODEL (optional): The OpenAI model to use. Defaults to `gpt-4o`.
 * CODECHAT_OUTPUT_FOLDER (optional): The folder where output files will be saved. Defaults to the current working directory.

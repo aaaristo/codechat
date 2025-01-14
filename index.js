@@ -6,9 +6,12 @@ const { WebSocketServer } = require("ws");
 const app = express();
 const server = createServer(app);
 
-if (!process.env.OPENAI_API_KEY) {
+if (!process.env.OPENAI_API_KEY && !process.env.OPENAI_AZURE_ENDPOINT) {
   console.error(
     "The OPENAI_API_KEY environment variable is not set. Get one here https://platform.openai.com/api-keys"
+  );
+  console.error(
+    "Alternatively you can define an OPENAI_AZURE_ENDPOINT environment variable. Get on Azure AI Foundry https://ai.azure.com/ in the deployment section"
   );
   process.exit(1);
 }
