@@ -1,6 +1,6 @@
 {
   "name": "codechat",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A chat application using OpenAI to help you code faster",
   "main": "index.js",
   "scripts": {
