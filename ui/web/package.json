@@ -6,6 +6,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^9.0.1",
+    "reconnecting-websocket": "^4.4.0",
     "styled-components": "^6.1.13"
   },
   "scripts": {

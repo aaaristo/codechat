@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Fragment } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import Markdown from "react-markdown";
+import ReconnectingWebSocket from "reconnecting-websocket";
 
 const Container = styled.div`
   display: flex;
@@ -141,7 +142,7 @@ function App() {
     fetchConversation();
 
     // Connect to WebSocket server
-    const ws = new WebSocket(`${baseUrl}/ws`);
+    const ws = new ReconnectingWebSocket(`${baseUrl}/ws`);
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
