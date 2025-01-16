@@ -1,4 +1,4 @@
-const { AzureOpenAI } = require("openai");
+const { OpenAI, AzureOpenAI } = require("openai");
 const fs = require("fs");
 const { formatToolCalls } = require("../utils");
 const {

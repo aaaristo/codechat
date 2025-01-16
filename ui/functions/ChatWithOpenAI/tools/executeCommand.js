@@ -25,12 +25,12 @@ module.exports = {
   resolver: async (args) => {
     const { path, command } = args;
 
-    console.log("executeCommand", path, command);
-
     const output = await execAsync(command, {
       env: process.env,
       cwd: assertInOutputDir(path),
     });
+
+    console.log("executeCommand", path, command, output);
 
     return output;
   },
